@@ -23,3 +23,9 @@ replace an owner with a new one by submiting their approvals and then calling
 for each subsequent action by, again, submitting their approvals and calling function 
 _changeRequirement_ with a new number of required approvals or _changeGracePeriod_ with
 new period setting in seconds, respectively.
+
+### Pausable
+Smart contract containing functionality (modifier) to disable/enable non-admin functions.
+Developer can choose where is the modifier relevant to be used. It is recommended to
+override this function in the final contract and only allow to call _pause_ function to
+owners/admins/deployer of the contract.

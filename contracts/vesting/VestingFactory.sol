@@ -12,6 +12,8 @@ contract VestingFactory is AccessControl, TimeMultisig {
 
   IERC20 private immutable visToken;
   mapping(address => bool) private vestings;
+  mapping(uint => bool) private vestingIds;
+  address public withdrawalAddress;
   
   event VestingCreated(address vestingAddress, uint id, uint visAmount, uint unlockTimestamp);
   event VestingWithdrawn(address vestingAddress, address toAddress);
@@ -24,33 +26,40 @@ contract VestingFactory is AccessControl, TimeMultisig {
   }
  
   function createVesting(uint visAmount, uint id, uint unlockTimestamp) external {
-    require(visAmount > 0, "no VIS");
-    require(unlockTimestamp >= block.timestamp, "past unlockTimestamp");
-    require(unlockTimestamp - block.timestamp <= MAX_VESTING_TIME, "too distant unlockTimestamp");
+    require(vestingIds[id] == false, "VestingFactory: Vesting ID already exists");
+    require(visAmount > 0, "VestingFactory: Invalid amount");
+    require(unlockTimestamp >= block.timestamp, "VestingFactory: Invalid unlockTimestamp");
+    require(unlockTimestamp - block.timestamp <= MAX_VESTING_TIME, "VestingFactory: Too distant unlockTimestamp");
   
     address vestingAddress = address(new VisVesting(id, unlockTimestamp));
     vestings[vestingAddress] = true;
+    vestingIds[id] = true;
   
-    require(visToken.transferFrom(msg.sender, vestingAddress, visAmount), "VIS transfer failed");
+    require(visToken.transferFrom(msg.sender, vestingAddress, visAmount), "VestingFactory: Token transfer failed");
 
     emit VestingCreated(vestingAddress, id, visAmount, unlockTimestamp);
   }
 
-  function doWithdraw(address vestingAddress, address toAddress) public onlyOwner enoughApprovals {
-    require(vestings[vestingAddress], "no vesting on given address");
-    
+  function doWithdraw(address vestingAddress) public onlyOwner {
+    require(withdrawalAddress != address(0), "VestingFactory: Invalid withdrawal address");
+    require(vestings[vestingAddress], "VestingFactory: No vesting on given address");
+
     VisVesting vesting = VisVesting(vestingAddress);
     vestings[vestingAddress] = false;
 
-    vesting.withdraw(visToken, toAddress);
+    vesting.withdraw(visToken, withdrawalAddress);
 
-    emit VestingWithdrawn(vestingAddress, toAddress);
+    emit VestingWithdrawn(vestingAddress, withdrawalAddress);
   }
 
-  function doWithdraws(address[] memory vestingAddresses, address toAddress) external onlyOwner enoughApprovals {
+  function doWithdraws(address[] memory vestingAddresses) external onlyOwner {
     for (uint i = 0; i < vestingAddresses.length; i++) {
-      doWithdraw(vestingAddresses[i], toAddress);
+      doWithdraw(vestingAddresses[i]);
     }
+  }
+
+  function setWithdrawalAddress(address _newWithdrawalAddress) external onlyOwner enoughApprovals {
+    withdrawalAddress = _newWithdrawalAddress;
   }
 
 }
@@ -68,9 +77,9 @@ contract VisVesting {
   }
 
   function withdraw(IERC20 token, address toAddress) external {
-    require(owner == msg.sender, "only owner");
-    require(unlockTimestamp <= block.timestamp, "vesting in progress");
-    require(token.transfer(toAddress, token.balanceOf(address(this))), "VIS transfer");
+    require(owner == msg.sender, "Vesting: You are not authorized");
+    require(unlockTimestamp <= block.timestamp, "Vesting: Vesting still in progress");
+    require(token.transfer(toAddress, token.balanceOf(address(this))), "Vesting: Token transfer failed");
   }
 
 }

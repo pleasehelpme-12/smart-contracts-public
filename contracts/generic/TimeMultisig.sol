@@ -1,15 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import {Pausable} from "./Pausable.sol";
 
-contract TimeMultisig {
+
+contract TimeMultisig is Pausable {
+
+  event RequirementChanged(uint requirement);
+  event GracePeriodChanged(uint gracePeriod);
+  event ApprovalSubmitted(address indexed owner);
+  event ApprovalRevoked(address indexed owner);
+  event OwnerAdded(address indexed owner);
+  event OwnerRemoved(address indexed owner);
+
   address[] public owners;
   mapping(address => uint) public approvals;
   mapping(address => bool) public isOwner;
   uint public requiredApprovals; // required amount of approvals to allow the transaction execution
   uint public gracePeriod; // period within which approvals must be submitted - recommended: 10 minutes
 
-  constructor(address[] memory _owners, uint _requiredApprovals, uint _gracePeriod) {
+  constructor(address[] memory _owners, uint _requiredApprovals, uint _gracePeriod) Pausable() {
     owners = _owners;
     for (uint i=0; i<owners.length; i++) {
       isOwner[owners[i]] = true;
@@ -39,6 +49,10 @@ contract TimeMultisig {
     _;
   }
 
+  function pause(bool _newPauseState) public override onlyOwner {
+    super.pause(_newPauseState);
+  }
+
   function changeRequirement(uint _newRequiredApprovals) public onlyOwner enoughApprovals {
     _changeRequirement(_newRequiredApprovals);
   }
@@ -50,11 +64,15 @@ contract TimeMultisig {
   function _changeRequirement(uint _newRequiredApprovals) internal {
     require(_newRequiredApprovals <= owners.length, "TimeMultisig: Required approvals cannot exceed number of owners");
     requiredApprovals = _newRequiredApprovals;
+
+    emit RequirementChanged(_newRequiredApprovals);
   }
 
   function _changeGracePeriod(uint _newGracePeriod) internal {
     require(_newGracePeriod >= 60, "TimeMultisig: Grace period cannot be less than 60 seconds");
     gracePeriod = _newGracePeriod;
+
+    emit GracePeriodChanged(_newGracePeriod);
   }
 
   function addOwner(address _newOwner) public onlyOwner enoughApprovals {
@@ -62,6 +80,8 @@ contract TimeMultisig {
     require(isOwner[_newOwner] == false, "TimeMultisig: Owner already exists");
     owners.push(_newOwner);
     isOwner[_newOwner] = true;
+
+    emit OwnerAdded(_newOwner);
   }
 
   function removeOwner(address _oldOwner) public onlyOwner enoughApprovals {
@@ -77,6 +97,8 @@ contract TimeMultisig {
     if (requiredApprovals > owners.length){
       changeRequirement(owners.length);
     }
+
+    emit OwnerRemoved(_oldOwner);
   }
 
   function replaceOwner(address _oldOwner, address _newOwner) public onlyOwner enoughApprovals {
@@ -91,16 +113,21 @@ contract TimeMultisig {
     }
     isOwner[_oldOwner] = false;
     isOwner[_newOwner] = true;
+
+    emit OwnerAdded(_newOwner);
+    emit OwnerRemoved(_oldOwner);
   }
 
   function approve() public onlyOwner {
     approvals[msg.sender] = block.timestamp;
+    emit ApprovalSubmitted(msg.sender);
   }
 
   function revoke() public onlyOwner {
     if (approvals[msg.sender] > 0) {
       delete approvals[msg.sender];
     }
+    emit ApprovalRevoked(msg.sender);
   }
 
   function revokeAll() public onlyOwner {
