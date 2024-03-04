@@ -9,7 +9,9 @@ verified parties to allow a certain function call.
 - Access to functions using **_enoughApprovals_** modifier will only be allowed
 if at least **_{requiredApprovals}_** of **_{owners}_** submitted their 
 approvals within **_{gracePeriod}_**.
-- Owners can submit their approvals for the upcoming action by calling function _approve_.
+- Owners can submit their approvals for the upcoming action by calling function _approve_. 
+They must specify **data** - which consists of encoded arguments for that action to prevent
+an owner to perform the action with different parameters than they have agreed prior.
 - Each successful call of such function immediately revokes all approvals to
 forbid further calls with same set of approvals.
 - If action has not yet been performed, owner can revoke his previously submitted approval

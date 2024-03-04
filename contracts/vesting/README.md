@@ -13,3 +13,4 @@ of newly deployed vesting contract where tokens will stay locked.
 contract they wish to withdraw tokens from. Tokens will be withdrawn to pre-set withdrawal address
 - Owners can perform multiple withdrawals from multiple vesting contracts at
 once, by calling the function _doWithdraws_.
+- Vesting contract does not explicitly incetivize users, but that is an expected behaviour.
