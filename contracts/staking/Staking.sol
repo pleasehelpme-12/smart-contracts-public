@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {TimeMultisig} from "../generic/TimeMultisig.sol";
 import {IStaking} from "./IStaking.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 
 contract Staking is IStaking, TimeMultisig {
 
@@ -216,7 +218,7 @@ contract Staking is IStaking, TimeMultisig {
     function withdrawBalance(address _contractAddress, uint _amount, address _toAddress) public onlyOwner
             enoughApprovals(abi.encodePacked("WITHDRAW_BALANCE", _contractAddress, _amount, _toAddress)) {
         require(_contractAddress != address(0));
-        IERC20 token = IERC20(_contractAddress);
-        require(token.transfer(_toAddress, _amount), "Staking: Token withdrawal failed");
+        SafeERC20 token = SafeERC20(_contractAddress);
+        require(token.safeTransfer(_toAddress, _amount), "Staking: Token withdrawal failed");
     }
 }
