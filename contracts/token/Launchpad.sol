@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {TimeMultisig} from "../generic/TimeMultisig.sol";
@@ -23,7 +23,6 @@ contract Launchpad is TimeMultisig {
         visToken = IERC20(visTokenAddress);
         visDecimals = 18;
         usdtToken = IERC20(usdtTokenAddress);
-        safeUsdtToken = SafeERC20(usdtTokenAddress);
     }
 
     /**
@@ -50,7 +49,7 @@ contract Launchpad is TimeMultisig {
      */
     function buy(uint _amount, uint _stakingPeriod) public notPaused {
         uint usdtAmount = currentPrice(_amount);
-        require(safeUsdtToken.safeTransferFrom(msg.sender, address(this), usdtAmount), "Launchpad: Token transfer failed");
+        require(SafeERC20.safeTransferFrom(usdtToken, msg.sender, address(this), usdtAmount), "Launchpad: Token transfer failed");
 
         visToken.approve(address(stakingContract), _amount);
         stakingContract.stake(msg.sender, _amount, _stakingPeriod);
@@ -90,8 +89,8 @@ contract Launchpad is TimeMultisig {
     function withdrawBalance(address _contractAddress, uint _amount, address _toAddress) public onlyOwner
             enoughApprovals(abi.encodePacked("WITHDRAW_BALANCE", _contractAddress, _amount, _toAddress)) {
         require(_contractAddress != address(0));
-        SafeERC20 token = SafeERC20(_contractAddress);
-        require(token.safeTransfer(_toAddress, _amount), "Launchpad: Token withdrawal failed");
+        IERC20 token = IERC20(_contractAddress);
+        require(SafeERC20.safeTransfer(token, _toAddress, _amount), "Launchpad: Token withdrawal failed");
     }
 
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {TimeMultisig} from "../generic/TimeMultisig.sol";
@@ -218,7 +218,7 @@ contract Staking is IStaking, TimeMultisig {
     function withdrawBalance(address _contractAddress, uint _amount, address _toAddress) public onlyOwner
             enoughApprovals(abi.encodePacked("WITHDRAW_BALANCE", _contractAddress, _amount, _toAddress)) {
         require(_contractAddress != address(0));
-        SafeERC20 token = SafeERC20(_contractAddress);
-        require(token.safeTransfer(_toAddress, _amount), "Staking: Token withdrawal failed");
+        IERC20 token = IERC20(_contractAddress);
+        require(SafeERC20.safeTransfer(token, _toAddress, _amount), "Staking: Token withdrawal failed");
     }
 }
