@@ -49,7 +49,7 @@ contract Launchpad is TimeMultisig {
      */
     function buy(uint _amount, uint _stakingPeriod) public notPaused {
         uint usdtAmount = currentPrice(_amount);
-        require(SafeERC20.safeTransferFrom(usdtToken, msg.sender, address(this), usdtAmount), "Launchpad: Token transfer failed");
+        SafeERC20.safeTransferFrom(usdtToken, msg.sender, address(this), usdtAmount);
 
         visToken.approve(address(stakingContract), _amount);
         stakingContract.stake(msg.sender, _amount, _stakingPeriod);
@@ -90,7 +90,7 @@ contract Launchpad is TimeMultisig {
             enoughApprovals(abi.encodePacked("WITHDRAW_BALANCE", _contractAddress, _amount, _toAddress)) {
         require(_contractAddress != address(0));
         IERC20 token = IERC20(_contractAddress);
-        require(SafeERC20.safeTransfer(token, _toAddress, _amount), "Launchpad: Token withdrawal failed");
+        SafeERC20.safeTransfer(token, _toAddress, _amount);
     }
 
 }

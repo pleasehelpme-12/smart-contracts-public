@@ -219,6 +219,6 @@ contract Staking is IStaking, TimeMultisig {
             enoughApprovals(abi.encodePacked("WITHDRAW_BALANCE", _contractAddress, _amount, _toAddress)) {
         require(_contractAddress != address(0));
         IERC20 token = IERC20(_contractAddress);
-        require(SafeERC20.safeTransfer(token, _toAddress, _amount), "Staking: Token withdrawal failed");
+        SafeERC20.safeTransfer(token, _toAddress, _amount);
     }
 }
